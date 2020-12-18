@@ -1,0 +1,62 @@
+# Copyright 2016-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+ 
+--- !ec2rlcore.module.Module
+# Module document. Translates directly into an almost-complete Module object
+name: !!str tcprecycle
+path: !!str
+version: !!str 2.0
+title: !!str Determines if aggressive TCP recycling is enabled
+helptext: !!str |
+  Determines if aggressive TCP recycling is enabled.
+  This may cause networking issues when source TCP connections originate from a NAT device.
+placement: !!str run
+package:
+  - !!str
+language: !!str python
+content: !!str |
+  from __future__ import print_function
+  import re
+  import subprocess
+  import sys
+
+  try:
+      print("Determining if TCP recycle is enabled")
+      recyclestatus = subprocess.check_output(["sysctl", "net.ipv4.tcp_tw_recycle"]).decode("utf-8")
+      if re.match(r"net.ipv4.tcp_tw_recycle\ =\ 0", recyclestatus):
+          print("[SUCCESS] Aggressive TCP recycling is disabled.")
+      else:
+          print("[FAILURE] You have aggressive TCP connection recycling enabled. "
+                "This may cause networking issues when source TCP connections originate from a NAT device.")
+          print("-- To disable, you can run 'sudo sysctl -w net.ipv4.tcp_tw_recycle=0'")
+          print("-- To disable it from re-occuring on next boot, you can run 'echo 'net.ipv4.tcp_tw_recycle= 0' |"
+                " sudo tee /etc/sysctl.conf'")
+      print("Please see https://github.com/awslabs/aws-ec2rescue-linux/blob/master/docs/modules/tcprecycle.md"
+          " for further details")
+  except Exception as ex:
+      print(ex)
+      print("[WARN] module generated an exception and exited abnormally. "
+            "Review the logs to determine the cause of the issue.")
+      sys.exit(0)
+constraint:
+  requires_ec2: !!str False
+  domain: !!str net
+  class: !!str diagnose
+  distro: !!str alami ubuntu rhel suse
+  required: !!str
+  optional: !!str
+  software: !!str
+  sudo: !!str False
+  perfimpact: !!str False
+  parallelexclusive: !!str
